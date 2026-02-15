@@ -1,0 +1,79 @@
+[
+    {
+        "id": 1,
+        "date": "2026-01-21 14:06",
+        "lat": 13.755100697006547,
+        "lon": 100.48716074609392,
+        "count": 7,
+        "details": {
+            "general_litter": 5,
+            "construction_debris": 2
+        },
+        "severity": "🟠 ปานกลาง",
+        "note": "ใกล้น้ำ",
+        "email": "test@gmail.com",
+        "status": "รอรับเรื่อง",
+        "image_path": "uploaded_images/report_1_20260121_140642.jpg"
+    },
+    {
+        "id": 2,
+        "date": "2026-01-21 14:07",
+        "lat": 13.709535030934958,
+        "lon": 100.781132807817,
+        "count": 31,
+        "details": {
+            "general_litter": 30,
+            "styrofoam": 1
+        },
+        "severity": "🔴 วิกฤต",
+        "note": "",
+        "email": "test@gmail.com",
+        "status": "รอรับเรื่อง",
+        "image_path": "uploaded_images/report_2_20260121_140707.jpg"
+    },
+    {
+        "id": 3,
+        "date": "2026-01-21 14:08",
+        "lat": 13.444387793913823,
+        "lon": 100.89872831456803,
+        "count": 9,
+        "details": {
+            "general_litter": 9
+        },
+        "severity": "🟠 ปานกลาง",
+        "note": "",
+        "email": "",
+        "status": "รอรับเรื่อง",
+        "image_path": "uploaded_images/report_3_20260121_140801.jpg"
+    },
+    {
+        "id": 4,
+        "date": "2026-02-12 16:04",
+        "lat": 13.7563,
+        "lon": 100.5018,
+        "count": 14,
+        "details": {
+            "general_litter": 14
+        },
+        "severity": "🔴 วิกฤต",
+        "note": "",
+        "email": "",
+        "status": "รอรับเรื่อง",
+        "image_path": "uploaded_images/report_4_20260212_160407.jpg"
+    },
+    {
+        "id": 5,
+        "date": "2026-02-12 16:04",
+        "lat": 13.93402552999983,
+        "lon": 100.60661315917969,
+        "count": 14,
+        "details": {
+            "general_litter": 14
+        },
+        "severity": "🔴 วิกฤต",
+        "note": "",
+        "email": "",
+        "status": "รอรับเรื่อง",
+        "image_path": "uploaded_images/report_5_20260212_160421.jpg"
+    }
+]
