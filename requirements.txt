@@ -1,0 +1,7 @@
+streamlit
+ultralytics
+pillow
+folium
+streamlit-folium
+pandas
+opencv-python-headless
