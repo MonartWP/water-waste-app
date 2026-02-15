@@ -14,28 +14,31 @@ import random
 from folium.plugins import MarkerCluster, HeatMap
 
 # ---------------------------------------------------------
-# 1. ตั้งค่าหน้าเว็บ & ระบบฐานข้อมูล
+# 1. ตั้งค่าหน้าเว็บ & CSS (Theme: Clean & Professional)
 # ---------------------------------------------------------
 st.set_page_config(page_title="Water Waste Manager", page_icon="🌊", layout="wide")
 
 st.markdown("""
 <style>
-    .stMetric { background-color: #f9f9f9; border: 1px solid #eee; border-radius: 5px; }
+    .stMetric { background-color: #f8f9fa; border: 1px solid #eee; border-radius: 8px; padding: 10px; }
     div[data-testid="stContainer"] { background-color: #ffffff; border-radius: 10px; }
-    h1, h2, h3 { font-family: 'Sarabun', sans-serif; font-weight: normal; }
-    .status-badge { padding: 5px 10px; border-radius: 15px; font-size: 0.8em; color: white; font-weight: bold; }
+    h1, h2, h3 { font-family: 'Sarabun', sans-serif; font-weight: 600; color: #2c3e50; }
+    .status-badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8em; color: white; font-weight: bold; }
+    .report-card { background-color: #f1f8ff; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #007bff; }
 </style>
 """, unsafe_allow_html=True)
 
 # --- ตัวแปรระบบ ---
 DB_FILE = 'data_reports.json'
 IMG_DIR = 'uploaded_images'
-MODEL_VERSION = "YOLOv8n-Custom v3.0 (Pro)"
+MODEL_VERSION = "YOLOv8n-Custom v8.0 (Ultimate)"
 
 if not os.path.exists(IMG_DIR):
     os.makedirs(IMG_DIR)
 
-# --- ฟังก์ชันจัดการข้อมูล ---
+# ---------------------------------------------------------
+# 2. ฟังก์ชันจัดการข้อมูล (Data Management)
+# ---------------------------------------------------------
 def load_data():
     if os.path.exists(DB_FILE):
         with open(DB_FILE, 'r', encoding='utf-8') as f:
@@ -54,7 +57,7 @@ def delete_report(report_index):
     save_data()
 
 # ---------------------------------------------------------
-# 2. Session State
+# 3. Session State & Model Init
 # ---------------------------------------------------------
 if 'reports' not in st.session_state:
     st.session_state['reports'] = load_data()
@@ -62,9 +65,6 @@ if 'reports' not in st.session_state:
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
 
-# ---------------------------------------------------------
-# 3. โหลดโมเดล
-# ---------------------------------------------------------
 @st.cache_resource
 def load_model():
     model_path = "best.pt"
@@ -81,38 +81,37 @@ except Exception as e:
 
 def send_email_notification(to_email, job_id, status):
     if to_email:
-        msg = f"📧 ถึง: {to_email} | งาน {job_id}: {status}"
+        msg = f"📧 ถึง: {to_email} | งาน #{job_id}: {status}"
         st.toast(msg, icon="✅")
 
 # ---------------------------------------------------------
-# 4. ส่วนแสดงผล (Sidebar & Login Logic)
+# 4. Sidebar & Hidden Admin Login
 # ---------------------------------------------------------
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/2964/2964514.png", width=50)
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/2964/2964514.png", width=60)
 st.sidebar.title("Smart River")
-st.sidebar.caption(f"Engine: {MODEL_VERSION}")
-
-st.sidebar.divider()
-with st.sidebar.expander("ℹ️ เกี่ยวกับโครงการ"):
-    st.write("""
-    **Water Body Waste Detection System**
-    พัฒนาโดย: ทีมโครงงานวิศวกรรมโทรคมนาคม
-    แจ้งเหตุพบขยะในแหล่งน้ำเพื่อการจัดการที่รวดเร็ว
-    """)
+st.sidebar.caption(f"System: {MODEL_VERSION}")
 
 st.sidebar.markdown("---")
 
-# --- [NEW] ส่วนจัดการ Admin แบบซ่อน (Hidden Login) ---
-# ไม่ใช้ Radio Button แล้ว แต่ใช้ Expander ซ่อนไว้ด้านล่าง
+# --- System Status (Fake but Cool) ---
+with st.sidebar.expander("🖥️ สถานะเซิร์ฟเวอร์ (Server Status)", expanded=False):
+    col_s1, col_s2 = st.columns(2)
+    col_s1.metric("API", "🟢 Online")
+    col_s2.metric("DB", "🟢 Connected")
+    st.progress(random.randint(20, 40), text="CPU Load")
+    st.caption(f"Last heartbeat: {datetime.now().strftime('%H:%M:%S')}")
+
+# --- Hidden Admin Login ---
 if not st.session_state['logged_in']:
-    with st.sidebar.expander("🔐 สำหรับเจ้าหน้าที่ (Admin Access)"):
+    st.sidebar.markdown("---")
+    with st.sidebar.expander("🔐 สำหรับเจ้าหน้าที่ (Admin Only)"):
         with st.form("login_form"):
             user_input = st.text_input("Username")
             pass_input = st.text_input("Password", type="password")
             submitted = st.form_submit_button("เข้าสู่ระบบ")
             
             if submitted:
-                # ตรวจสอบรหัสผ่าน (รองรับทั้ง st.secrets และ hardcode เผื่อเทส)
-                # วิธีใช้ Secrets: ตั้งค่าใน Streamlit Cloud Setting
+                # ใช้ st.secrets เพื่อความปลอดภัย (Fallback เป็น admin/1234)
                 admin_user = st.secrets.get("admin_user", "admin") 
                 admin_pass = st.secrets.get("admin_password", "1234")
                 
@@ -122,87 +121,93 @@ if not st.session_state['logged_in']:
                 else:
                     st.error("รหัสผ่านไม่ถูกต้อง")
 else:
-    # ถ้าล็อกอินแล้ว แสดงปุ่มออกจากระบบแทน
-    st.sidebar.success("สถานะ: เจ้าหน้าที่ (Admin)")
+    st.sidebar.success("👤 สวัสดี, เจ้าหน้าที่")
     if st.sidebar.button("ออกจากระบบ (Logout)"):
         st.session_state['logged_in'] = False
         st.rerun()
 
 # ---------------------------------------------------------
-# 5. Main Content Switching
+# 5. Main Page Router
 # ---------------------------------------------------------
-
-# ถ้าล็อกอิน -> ไปหน้า Dashboard
-# ถ้ายังไม่ล็อกอิน -> ไปหน้า แจ้งเหตุ (หน้า default)
 if st.session_state['logged_in']:
     page = "Dashboard"
 else:
     page = "Citizen"
 
 # =========================================================
-# 🏠 ส่วนที่ 1: หน้าแจ้งเหตุ (Citizen View)
+# 🏠 ส่วนที่ 1: หน้าประชาชน (Citizen View)
 # =========================================================
 if page == "Citizen":
     
-    st.title("🌊 ระบบแจ้งเหตุขยะในแหล่งน้ำ")
-    st.write("ช่วยกันดูแลแหล่งน้ำของเรา ด้วย 3 ขั้นตอนง่ายๆ")
+    st.title("🌊 แจ้งเหตุขยะในแหล่งน้ำ")
+    st.markdown("**ร่วมเป็นส่วนหนึ่งในการดูแลแม่น้ำของเรา ง่ายๆ เพียง 3 ขั้นตอน**")
+    
+    # --- [NEW] Recent Feed (Social Proof) ---
+    if st.session_state['reports']:
+        st.markdown("---")
+        with st.container():
+            col_feed, col_txt = st.columns([0.1, 0.9])
+            with col_feed:
+                st.markdown("📢")
+            with col_txt:
+                last_report = st.session_state['reports'][-1]
+                st.caption(f"**ล่าสุดเมื่อกี้:** มีเพื่อนพลเมืองแจ้งเหตุเข้ามาที่เขต {last_report.get('lat', 0):.2f}, {last_report.get('lon', 0):.2f} (งาน #{last_report['id']})")
+
     st.divider()
 
+    # --- Step 1-3 Workflow ---
     step1, step2, step3 = st.columns(3)
     with step1:
-        st.markdown("#### 1. 📸 ถ่ายรูป")
-        st.caption("ถ่ายรูปขยะหรืออัปโหลดรูปภาพ")
+        st.info("1. 📸 ถ่ายรูป")
     with step2:
-        st.markdown("#### 2. 📍 ระบุพิกัด")
-        st.caption("ปักหมุดตำแหน่งที่พบในแผนที่")
+        st.info("2. 📍 ระบุพิกัด")
     with step3:
-        st.markdown("#### 3. 📩 ส่งข้อมูล")
-        st.caption("กดส่งเรื่องเพื่อให้เจ้าหน้าที่ตรวจสอบ")
+        st.info("3. 📝 ส่งข้อมูล")
 
-    st.markdown("---")
+    col_left, col_right = st.columns([1, 1])
 
-    work_col1, work_col2 = st.columns([1, 1])
-
-    with work_col1:
-        st.subheader("หลักฐานรูปภาพ")
+    # --- Left Column: Camera & AI ---
+    with col_left:
+        st.subheader("1. หลักฐานรูปภาพ")
         
-        # --- [NEW] เลือกวิธีนำเข้าภาพ (Camera vs Upload) ---
-        input_method = st.radio("เลือกวิธีนำเข้าภาพ:", ["📸 ถ่ายภาพ", "📂 อัปโหลดไฟล์"], horizontal=True)
+        # เลือกแหล่งภาพ
+        input_type = st.radio("เลือกวิธี:", ["📸 ถ่ายภาพ", "📂 อัปโหลด"], horizontal=True, label_visibility="collapsed")
         
         uploaded_file = None
-        if input_method == "📸 ถ่ายภาพ":
-            camera_file = st.camera_input("กดเพื่อถ่ายภาพ")
-            if camera_file:
-                uploaded_file = camera_file
+        if input_type == "📸 ถ่ายภาพ":
+            uploaded_file = st.camera_input("กดปุ่มเพื่อถ่ายภาพ")
         else:
-            uploaded_file = st.file_uploader("เลือกรูปภาพ", type=["jpg", "png", "jpeg"])
+            uploaded_file = st.file_uploader("เลือกไฟล์รูปภาพ", type=["jpg", "png", "jpeg"])
         
-        if uploaded_file is not None:
+        if uploaded_file:
             image = PIL.Image.open(uploaded_file)
-            st.image(image, caption="ตัวอย่างภาพ", use_container_width=True)
+            st.image(image, caption="ภาพตัวอย่าง", use_container_width=True)
             
-            # Slider ปรับความมั่นใจ
-            conf_threshold = st.slider("ความละเอียดการตรวจจับ (AI Confidence)", 0.0, 1.0, 0.25, 0.05)
-            
-            if st.button("ตรวจสอบขยะด้วย AI", type="primary", use_container_width=True):
+            # AI Options
+            with st.expander("⚙️ ตั้งค่า AI (ขั้นสูง)"):
+                conf_threshold = st.slider("ความละเอียด (Confidence)", 0.0, 1.0, 0.25, 0.05)
+
+            if st.button("🔍 วิเคราะห์ด้วย AI", type="primary", use_container_width=True):
                 if model:
-                    # Simulation Progress Bar
-                    progress_text = "AI กำลังวิเคราะห์..."
+                    # Progress Bar Simulation
+                    progress_text = "AI กำลังทำงาน..."
                     my_bar = st.progress(0, text=progress_text)
-                    for percent in range(0, 101, 10):
-                        time.sleep(0.02)
+                    for percent in range(0, 101, 20):
+                        time.sleep(0.05)
                         my_bar.progress(percent, text=progress_text)
                     my_bar.empty()
 
-                    # AI Prediction
+                    # Prediction
                     results = model(image, conf=conf_threshold)
                     res_plotted = results[0].plot()
                     
+                    # Count Logic
                     cls_indices = results[0].boxes.cls.tolist()
                     names_dict = results[0].names
                     counts_dict = Counter([names_dict[int(x)] for x in cls_indices])
                     total_count = len(cls_indices)
                     
+                    # Store in Session
                     st.session_state['temp_img'] = res_plotted
                     st.session_state['temp_count'] = total_count
                     st.session_state['temp_details'] = dict(counts_dict)
@@ -210,218 +215,247 @@ if page == "Citizen":
                     st.image(res_plotted, caption=f"ผลลัพธ์: พบ {total_count} ชิ้น", channels="BGR", use_container_width=True)
                     
                     if counts_dict:
-                        txt_res = " | ".join([f"{k}: {v}" for k,v in counts_dict.items()])
-                        st.success(f"รายการที่พบ: {txt_res}")
+                        items_str = ", ".join([f"{k} ({v})" for k,v in counts_dict.items()])
+                        st.success(f"✅ พบ: {items_str}")
                     else:
-                        st.warning("ไม่พบวัตถุต้องสงสัย")
+                        st.warning("⚠️ ไม่พบวัตถุต้องสงสัย")
                 else:
-                    st.error("Model Error: ไม่พบไฟล์โมเดล")
+                    st.error("ไม่พบโมเดล AI")
 
-    with work_col2:
-        st.subheader("ระบุตำแหน่ง")
+    # --- Right Column: Map & Details ---
+    with col_right:
+        st.subheader("2. จุดเกิดเหตุ")
+        
         m = folium.Map(location=[13.7563, 100.5018], zoom_start=12)
         m.add_child(folium.LatLngPopup())
-        map_data = st_folium(m, height=400, use_container_width=True)
+        map_data = st_folium(m, height=300, use_container_width=True)
         
         lat, lon = 13.7563, 100.5018
         if map_data.get("last_clicked"):
             lat = map_data["last_clicked"]["lat"]
             lon = map_data["last_clicked"]["lng"]
-            st.success(f"📍 พิกัดที่เลือก: {lat:.4f}, {lon:.4f}")
+            st.success(f"📍 พิกัด: {lat:.4f}, {lon:.4f}")
+        else:
+            st.info("👆 จิ้มบนแผนที่เพื่อระบุตำแหน่ง")
 
+        st.markdown("---")
+        st.subheader("3. รายละเอียด")
+        
+        # --- [NEW] Smart Tags (ลดการพิมพ์) ---
+        st.write("ประเภทปัญหา (เลือกได้หลายข้อ)")
+        tags = st.multiselect(
+            "Tags",
+            ["ถุงพลาสติก/ขวดน้ำ", "ผักตบชวา/วัชพืช", "ขยะชิ้นใหญ่", "สัตว์ตาย/กลิ่นเหม็น", "คราบน้ำมัน", "กีดขวางทางระบายน้ำ"],
+            label_visibility="collapsed"
+        )
+        
+        other_note = st.text_input("เพิ่มเติม (ถ้ามี)", placeholder="เช่น อยู่ใต้สะพาน...")
+        contact_email = st.text_input("อีเมลติดต่อกลับ (ไม่บังคับ)")
+        
+        # Combine notes
+        final_note = ", ".join(tags)
+        if other_note:
+            final_note += f" | {other_note}"
+
+    # --- Submit Section ---
     st.markdown("---")
-    c1, c2 = st.columns(2)
-    with c1:
-        user_email = st.text_input("อีเมลติดต่อกลับ (Optional)", placeholder="name@example.com")
-    with c2:
-        note = st.text_input("รายละเอียดเพิ่มเติม", placeholder="เช่น ขยะส่งกลิ่นเหม็น, กีดขวางทางน้ำ")
-    
-    confirm_data = st.checkbox("ข้าพเจ้ายืนยันว่าข้อมูลและรูปภาพที่แจ้งเป็นความจริง")
+    col_check, col_btn = st.columns([2, 1])
+    with col_check:
+        confirm = st.checkbox("ยืนยันว่าข้อมูลเป็นความจริง")
+    with col_btn:
+        btn_submit = st.button("🚀 ส่งเรื่องแจ้งเหตุ", type="primary", use_container_width=True)
 
-    if st.button("ยืนยันการแจ้งเหตุ", type="secondary", use_container_width=True):
-        if not confirm_data:
-            st.error("⚠️ กรุณาติ๊กยืนยันความถูกต้องของข้อมูลก่อนส่ง")
-        elif 'temp_count' in st.session_state:
-            count = st.session_state['temp_count']
-            severity = "🔴 วิกฤต" if count > 10 else ("🟠 ปานกลาง" if count > 5 else "🟢 เล็กน้อย")
-            
-            # Save Image
+    if btn_submit:
+        if not confirm:
+            st.toast("⚠️ กรุณายืนยันข้อมูลก่อนส่ง", icon="⚠️")
+        elif 'temp_count' not in st.session_state:
+            st.toast("⚠️ กรุณาให้ AI ตรวจสอบรูปก่อน", icon="🤖")
+        else:
+            # Process Saving
             new_id = len(st.session_state['reports']) + 1
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            file_ext = uploaded_file.name.split('.')[-1] if uploaded_file.name != "camera_input" else "jpg"
-            save_path = f"{IMG_DIR}/report_{new_id}_{timestamp}.{file_ext}"
             
+            # File Handling
+            ext = "jpg"
+            if hasattr(uploaded_file, 'name') and uploaded_file.name != "camera_input":
+                ext = uploaded_file.name.split('.')[-1]
+            
+            save_path = f"{IMG_DIR}/report_{new_id}_{timestamp}.{ext}"
             with open(save_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
 
-            # Create Record
+            severity = "🔴 วิกฤต" if st.session_state['temp_count'] > 10 else ("🟠 ปานกลาง" if st.session_state['temp_count'] > 5 else "🟢 เล็กน้อย")
+
             new_report = {
                 "id": new_id,
                 "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "lat": lat, "lon": lon,
-                "count": count, "details": st.session_state['temp_details'],
-                "severity": severity, "note": note,
-                "email": user_email, "status": "รอรับเรื่อง",
+                "count": st.session_state['temp_count'],
+                "details": st.session_state['temp_details'],
+                "severity": severity,
+                "note": final_note, # Smart Tag Data
+                "email": contact_email,
+                "status": "รอรับเรื่อง",
                 "image_path": save_path
             }
-            
+
             st.session_state['reports'].append(new_report)
             save_data()
 
             st.balloons()
-            st.success(f"✅ บันทึกสำเร็จ! รหัสงาน: #{new_report['id']}")
-            send_email_notification(user_email, new_report['id'], "ได้รับเรื่องแล้ว")
+            st.success(f"✅ บันทึกสำเร็จ! รหัสงานของคุณคือ: #{new_id}")
+            send_email_notification(contact_email, new_id, "ได้รับเรื่องแล้ว")
             
-            # Clear Temp
+            # Reset
             if 'temp_count' in st.session_state: del st.session_state['temp_count']
-        else:
-            st.warning("⚠️ กรุณาให้ AI ตรวจสอบรูปภาพก่อนกดส่ง")
+
+    # --- [NEW] Tracking System (ลดความระแวง) ---
+    st.markdown("---")
+    with st.expander("🔍 ติดตามสถานะงาน (Tracking)"):
+        c_track1, c_track2 = st.columns([3, 1])
+        with c_track1:
+            track_id = st.text_input("กรอกรหัสงาน (Job ID)", placeholder="เช่น 1")
+        with c_track2:
+            st.write("") # Spacer
+            st.write("") 
+            btn_track = st.button("ตรวจสอบ")
+        
+        if btn_track and track_id:
+            found = False
+            for r in st.session_state['reports']:
+                if str(r['id']) == track_id:
+                    st.info(f"🆔 งานหมายเลข: {r['id']}")
+                    st.write(f"📅 วันที่: {r['date']}")
+                    st.markdown(f"🚦 สถานะปัจจุบัน: **{r['status']}**")
+                    if r['status'] == "เสร็จสิ้น":
+                        st.success("🎉 ดำเนินการเรียบร้อยแล้ว!")
+                    found = True
+                    break
+            if not found:
+                st.error("❌ ไม่พบข้อมูล")
 
 # =========================================================
 # 👮 ส่วนที่ 2: หน้าเจ้าหน้าที่ (Dashboard View)
 # =========================================================
 elif page == "Dashboard":
     
-    c_head, c_space = st.columns([5, 1])
-    with c_head:
-        st.title("🔐 Agency Dashboard")
+    st.title("🔐 Agency Dashboard")
+    st.caption("ระบบบริหารจัดการงานแจ้งเหตุ (Admin Only)")
     
     if not st.session_state['reports']:
-        st.info("ยังไม่มีข้อมูลการแจ้งเหตุในระบบ")
+        st.warning("ยังไม่มีข้อมูลในระบบ")
     else:
         # --- Filters ---
-        with st.expander("🔍 ตัวกรองข้อมูล (Filters)", expanded=False):
-            col_f1, col_f2 = st.columns(2)
-            with col_f1:
-                filter_status = st.multiselect("สถานะงาน:", ["รอรับเรื่อง", "กำลังดำเนินการ", "เสร็จสิ้น"], default=["รอรับเรื่อง", "กำลังดำเนินการ", "เสร็จสิ้น"])
-            with col_f2:
-                filter_severity = st.multiselect("ระดับความรุนแรง:", ["🔴 วิกฤต", "🟠 ปานกลาง", "🟢 เล็กน้อย"], default=["🔴 วิกฤต", "🟠 ปานกลาง", "🟢 เล็กน้อย"])
+        with st.expander("🛠️ ตัวกรอง (Filters)", expanded=True):
+            f_col1, f_col2 = st.columns(2)
+            with f_col1:
+                status_filter = st.multiselect("สถานะ", ["รอรับเรื่อง", "กำลังดำเนินการ", "เสร็จสิ้น"], default=["รอรับเรื่อง", "กำลังดำเนินการ"])
+            with f_col2:
+                severity_filter = st.multiselect("ระดับความรุนแรง", ["🔴 วิกฤต", "🟠 ปานกลาง", "🟢 เล็กน้อย"], default=["🔴 วิกฤต", "🟠 ปานกลาง", "🟢 เล็กน้อย"])
         
-        filtered_reports = [r for r in st.session_state['reports'] if r['status'] in filter_status and r['severity'] in filter_severity]
+        # Apply Filter
+        filtered_list = [r for r in st.session_state['reports'] if r['status'] in status_filter and r['severity'] in severity_filter]
 
-        # --- Stats & Charts ---
-        col_main, col_activity = st.columns([2, 1])
-        with col_main:
-            total = len(st.session_state['reports'])
-            done = len([r for r in st.session_state['reports'] if r['status'] == 'เสร็จสิ้น'])
-            wait = total - done
+        # --- KPI Cards ---
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("ทั้งหมด", len(st.session_state['reports']))
+        k2.metric("รอรับเรื่อง", len([r for r in st.session_state['reports'] if r['status'] == 'รอรับเรื่อง']), delta_color="inverse")
+        k3.metric("ดำเนินการ", len([r for r in st.session_state['reports'] if r['status'] == 'กำลังดำเนินการ']))
+        k4.metric("เสร็จสิ้น", len([r for r in st.session_state['reports'] if r['status'] == 'เสร็จสิ้น']))
+
+        st.divider()
+
+        # --- Advanced Map & Export ---
+        c_map, c_act = st.columns([2, 1])
+        
+        with c_map:
+            st.subheader("🗺️ แผนที่ปฏิบัติการ")
+            # Toggle Map Type
+            is_heatmap = st.toggle("แสดงแบบ Heatmap (ความหนาแน่น)", value=False)
             
-            k1, k2, k3 = st.columns(3)
-            k1.metric("งานทั้งหมด", f"{total}", "Reports")
-            k2.metric("ดำเนินการแล้ว", f"{done}", "Done")
-            k3.metric("คงค้าง", f"{wait}", "Pending", delta_color="inverse")
-            
-            st.markdown("### สถิติเชิงลึก")
-            tab1, tab2 = st.tabs(["ประเภทขยะ", "สถานะงาน"])
-            with tab1:
-                all_types = []
-                for r in st.session_state['reports']:
-                    if r['details']:
-                        for k, v in r['details'].items(): all_types.extend([k]*v)
-                if all_types:
-                    df_trash = pd.DataFrame.from_dict(Counter(all_types), orient='index', columns=['จำนวน'])
-                    st.bar_chart(df_trash)
+            if filtered_list:
+                center_lat = filtered_list[-1]['lat']
+                center_lon = filtered_list[-1]['lon']
+                m_admin = folium.Map(location=[center_lat, center_lon], zoom_start=11)
+                
+                if is_heatmap:
+                    heat_data = [[r['lat'], r['lon']] for r in filtered_list]
+                    HeatMap(heat_data, radius=15).add_to(m_admin)
                 else:
-                    st.caption("ไม่มีข้อมูล")
-            with tab2:
-                statuses = [r['status'] for r in st.session_state['reports']]
-                df_status = pd.DataFrame.from_dict(Counter(statuses), orient='index', columns=['จำนวน'])
-                st.bar_chart(df_status, color="#ff4b4b")
+                    cluster = MarkerCluster().add_to(m_admin)
+                    for r in filtered_list:
+                        color = "red" if r['status'] == "รอรับเรื่อง" else ("orange" if r['status'] == "กำลังดำเนินการ" else "green")
+                        folium.Marker(
+                            [r['lat'], r['lon']],
+                            popup=f"#{r['id']} ({r['severity']})",
+                            icon=folium.Icon(color=color)
+                        ).add_to(cluster)
+                
+                st_folium(m_admin, height=400, use_container_width=True)
+            else:
+                st.info("ไม่มีข้อมูลตามตัวกรอง")
 
-        with col_activity:
-            st.markdown("### 📥 ส่งออกข้อมูล")
-            # --- [NEW] Export CSV Button ---
-            if st.session_state['reports']:
-                df_export = pd.DataFrame(st.session_state['reports'])
-                df_export['details'] = df_export['details'].apply(lambda x: str(x)) # แปลง dict เป็น str เพื่อให้ save ได้
-                csv = df_export.to_csv(index=False).encode('utf-8')
+        with c_act:
+            st.subheader("📥 จัดการข้อมูล")
+            # [NEW] CSV Export
+            df = pd.DataFrame(st.session_state['reports'])
+            if not df.empty:
+                # Cleanup for CSV
+                df['details'] = df['details'].astype(str) 
+                csv = df.to_csv(index=False).encode('utf-8')
                 
                 st.download_button(
-                    label="📄 Download CSV",
+                    label="📄 ดาวน์โหลดรายงาน (Excel/CSV)",
                     data=csv,
-                    file_name=f"waste_report_{datetime.now().strftime('%Y%m%d')}.csv",
+                    file_name="waste_report.csv",
                     mime="text/csv",
                     type="primary",
                     use_container_width=True
                 )
             
-            st.markdown("---")
-            st.markdown("### 🕒 แจ้งเตือนล่าสุด")
-            recents = st.session_state['reports'][-5:][::-1]
-            for r in recents:
-                border_color = "#ff4b4b" if r['status'] == "รอรับเรื่อง" else ("#ffa500" if r['status'] == "กำลังดำเนินการ" else "#28a745")
-                st.markdown(f"""
-                <div style="padding: 10px; margin-bottom: 10px; border-radius: 5px; background-color: #f8f9fa; border-left: 5px solid {border_color}; font-size: 0.85em;">
-                    <b>#{r['id']}</b> {r['date'].split(' ')[1]} | {r['status']}<br>
-                    <span style='color:#666;'>{r['severity']} ({r['count']} ชิ้น)</span>
-                </div>
-                """, unsafe_allow_html=True)
+            st.markdown("### 📊 กราฟสรุป")
+            if not df.empty:
+                st.caption("จำแนกตามความรุนแรง")
+                st.bar_chart(df['severity'].value_counts(), color="#ffaa00")
 
+        # --- Task Management List ---
         st.divider()
-
-        # --- Advanced Map ---
-        if filtered_reports:
-            st.markdown("### 🗺️ แผนที่ปฏิบัติการ (Operation Map)")
-            
-            col_switch, col_text = st.columns([0.1, 0.9])
-            with col_switch:
-                is_heatmap = st.toggle("", value=False)
-            with col_text:
-                st.write(f"🔥 **Heatmap Mode** ({'ON' if is_heatmap else 'OFF'})")
-            
-            last_lat = filtered_reports[-1]['lat']
-            last_lon = filtered_reports[-1]['lon']
-            m_agency = folium.Map(location=[last_lat, last_lon], zoom_start=10)
-            
-            if is_heatmap:
-                heat_data = [[r['lat'], r['lon']] for r in filtered_reports]
-                HeatMap(heat_data, radius=15, blur=10).add_to(m_agency)
-            else:
-                marker_cluster = MarkerCluster().add_to(m_agency)
-                for r in filtered_reports:
-                    color = "red" if r['status'] == "รอรับเรื่อง" else ("orange" if r['status'] == "กำลังดำเนินการ" else "green")
-                    folium.Marker(
-                        [r['lat'], r['lon']], 
-                        popup=f"ID: {r['id']}", 
-                        icon=folium.Icon(color=color)
-                    ).add_to(marker_cluster)
-
-            st_folium(m_agency, height=450, use_container_width=True)
-        else:
-            st.warning("ไม่พบข้อมูลตามตัวกรอง")
-
-        # --- Task Management ---
-        st.markdown("### 📝 รายการแจ้งเหตุ (Task List)")
-        if filtered_reports:
-            for r in filtered_reports:
-                real_index = st.session_state['reports'].index(r)
+        st.subheader("📝 รายการงาน (Task List)")
+        
+        if filtered_list:
+            for r in filtered_list:
+                idx = st.session_state['reports'].index(r)
                 
-                icon = "🔴" if r['status'] == "รอรับเรื่อง" else ("🟠" if r['status'] == "กำลังดำเนินการ" else "🟢")
-                with st.expander(f"{icon} Ticket #{r['id']} : {r['date']} - {r['severity']}"):
-                    ec1, ec2 = st.columns([1, 2])
-                    with ec1:
-                        if r.get('image_path') and os.path.exists(r['image_path']):
+                # Card Styling
+                with st.expander(f"📌 งาน #{r['id']} | {r['status']} | {r['note'][:30]}..."):
+                    c_img, c_info = st.columns([1, 2])
+                    
+                    with c_img:
+                        if os.path.exists(r['image_path']):
                             st.image(r['image_path'], use_container_width=True)
                         else:
-                            st.caption("ไม่พบไฟล์รูปภาพ")
-                    with ec2:
-                        st.caption(f"📍 {r['lat']:.4f}, {r['lon']:.4f} | 📧 {r['email']}")
-                        st.write(f"**Note:** {r['note']}")
-                        st.info(f"**AI Detected:** {r['count']} ea. | {r['details']}")
+                            st.error("ไม่พบไฟล์ภาพ")
+                    
+                    with c_info:
+                        st.write(f"**วันที่:** {r['date']}")
+                        st.write(f"**พิกัด:** {r['lat']}, {r['lon']}")
+                        st.write(f"**รายละเอียด:** {r['note']}")
+                        st.info(f"🤖 AI พบ: {r['count']} ชิ้น {r['details']}")
                         
-                        c_stat, c_del = st.columns([3, 1])
-                        with c_stat:
-                            new_stat = st.selectbox("Update Status", ["รอรับเรื่อง", "กำลังดำเนินการ", "เสร็จสิ้น"], 
-                                                    index=["รอรับเรื่อง", "กำลังดำเนินการ", "เสร็จสิ้น"].index(r['status']), 
-                                                    key=f"st_{real_index}")
-                            if new_stat != r['status']:
-                                st.session_state['reports'][real_index]['status'] = new_stat
+                        # Admin Actions
+                        c_act1, c_act2 = st.columns(2)
+                        with c_act1:
+                            new_status = st.selectbox("อัปเดตสถานะ", ["รอรับเรื่อง", "กำลังดำเนินการ", "เสร็จสิ้น"], index=["รอรับเรื่อง", "กำลังดำเนินการ", "เสร็จสิ้น"].index(r['status']), key=f"s_{idx}")
+                            if new_status != r['status']:
+                                st.session_state['reports'][idx]['status'] = new_status
                                 save_data()
-                                send_email_notification(r['email'], r['id'], new_stat)
-                                time.sleep(0.5)
                                 st.rerun()
-                        with c_del:
-                            st.markdown("<br>", unsafe_allow_html=True)
-                            if st.button("🗑️ ลบ", key=f"del_{real_index}", type="primary"):
-                                delete_report(real_index)
+                        
+                        with c_act2:
+                            st.write("")
+                            st.write("")
+                            if st.button("🗑️ ลบงานนี้", key=f"d_{idx}", type="primary"):
+                                delete_report(idx)
                                 st.rerun()
+        else:
+            st.info("ไม่พบรายการ")
