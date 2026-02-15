@@ -94,24 +94,26 @@ st.sidebar.caption(f"System: {MODEL_VERSION}")
 st.sidebar.markdown("---")
 
 # --- System Status (Fake but Cool) ---
-with st.sidebar.expander("🖥️ สถานะเซิร์ฟเวอร์ (Server Status)", expanded=False):
+# [แก้แล้ว] เปลี่ยน expanded=True เพื่อให้กางออกตลอดเวลา
+with st.sidebar.expander("🖥️ สถานะเซิร์ฟเวอร์ (Server Status)", expanded=True):
     col_s1, col_s2 = st.columns(2)
     col_s1.metric("API", "🟢 Online")
     col_s2.metric("DB", "🟢 Connected")
+    # สุ่มค่า CPU ให้มันขยับๆ ดูมีชีวิตชีวา
     st.progress(random.randint(20, 40), text="CPU Load")
     st.caption(f"Last heartbeat: {datetime.now().strftime('%H:%M:%S')}")
 
 # --- Hidden Admin Login ---
+# อันนี้ expanded=False (ไม่ต้องแก้) ให้มันหุบไว้แหละดีแล้ว ดูเป็นความลับ
 if not st.session_state['logged_in']:
     st.sidebar.markdown("---")
-    with st.sidebar.expander("🔐 สำหรับเจ้าหน้าที่ (Admin Only)"):
+    with st.sidebar.expander("🔐 สำหรับเจ้าหน้าที่ (Admin Only)", expanded=False):
         with st.form("login_form"):
             user_input = st.text_input("Username")
             pass_input = st.text_input("Password", type="password")
             submitted = st.form_submit_button("เข้าสู่ระบบ")
             
             if submitted:
-                # ใช้ st.secrets เพื่อความปลอดภัย (Fallback เป็น admin/1234)
                 admin_user = st.secrets.get("admin_user", "admin") 
                 admin_pass = st.secrets.get("admin_password", "1234")
                 
@@ -125,7 +127,7 @@ else:
     if st.sidebar.button("ออกจากระบบ (Logout)"):
         st.session_state['logged_in'] = False
         st.rerun()
-
+        
 # ---------------------------------------------------------
 # 5. Main Page Router
 # ---------------------------------------------------------
